@@ -495,7 +495,10 @@ function bindControls() {
   const bind = (id, key, fmtFn, scale) => {
     const el = $(id);
     const out = $(id + "Val");
-    const sync = () => { cfg[key] = scale(el.value); out.textContent = fmtFn(el.value); save(); };
+    // 缺一个控件不该把整个启动流程拖死——曾经因为 id 对不上（cdVal vs cooldownVal）
+    // 抛异常，导致后面 render 和 criteria 加载全都没执行。
+    if (!el || !out) { console.warn("控件缺失，跳过：" + id + " / " + id + "Val"); return; }
+    const sync = () => { cfg[key] = scale(el.value); out.textContent = fmtFn(el.value); };
     el.addEventListener("input", sync);
     sync();
   };
