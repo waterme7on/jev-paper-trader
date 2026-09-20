@@ -237,6 +237,8 @@ function render(data) {
 
     // 同一份行情、同一条规则（定义在 assets/strategy.js，回测用的是同一份）
     const nv = q ? Strategy.naiveSignal(Strategy.NAIVE_DEFAULT, q) : null;
+    // 动量缺失时要说清楚是「行情源降级」还是「本来就没有」，别含糊地写「动量不足」
+    const degraded = !!(data && data.source && /fallback/.test(data.source));
     if (hasSignal && nv) {
       acct.naive = acct.naive || { same: 0, total: 0 };
       acct.naive.total++;
@@ -275,7 +277,8 @@ function render(data) {
       </div>
       <div class="bars">${bars}</div>
       <div class="naive-line">一行 <code>if</code>（${Strategy.NAIVE_DEFAULT}）：
-        ${nv ? `<b class="act ${nv}">${nv.toUpperCase()}</b>` : '<span class="none">动量不足</span>'}
+        ${nv ? `<b class="act ${nv}">${nv.toUpperCase()}</b>`
+             : `<span class="none">${degraded ? "行情源降级，缺 24h" : "动量不足"}</span>`}
         ${hasSignal && nv ? (nv === signal
           ? '<span class="agree">与 Jev 一致</span>'
           : '<span class="diff">与 Jev 不同</span>') : ""}
@@ -294,7 +297,12 @@ function render(data) {
     const n = acct.naive || { same: 0, total: 0 };
     const box2 = $("naiveCmp");
     if (!n.total) {
-      box2.innerHTML = '<div class="hint">还没有可比的数据（需要同时有 Jev 信号和 1h/24h 动量）。</div>';
+      const why = (data && data.source && /fallback/.test(data.source))
+        ? "当前行情源降级（CoinGecko 限流，已切 Coinbase 兜底），拿不到完整动量。"
+        : "需要同时有 Jev 信号和 1h/24h 动量。";
+      box2.innerHTML = `<div class="hint">还没有可比的数据 —— ${why}</div>`;
+      if ($("naiveVerdict")) $("naiveVerdict").textContent = "";
+      if ($("naiveNote")) $("naiveNote").textContent = "";
     } else {
       const rate = (n.same / n.total) * 100;
       const rows = SYMBOLS.map((s) => {
