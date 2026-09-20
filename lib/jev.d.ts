@@ -53,6 +53,22 @@ export declare function buildState(
   positions?: Record<string, Position> | null,
 ): string;
 
+export interface Decision {
+  action: "buy" | "sell" | "hold";
+  probabilities: Record<string, number>;
+  /** 模型没给就是 null，不用 0 冒充 —— 0 会被读成「完全没把握」。 */
+  confidence: number | null;
+}
+
+/**
+ * 把 evaluate 的结果解析成决策 + 市场风险。
+ * 两个消费方（Vercel 的 /api/tick、yololab.cc 的 Worker）共用这一份。
+ */
+export declare function parseAnswers(
+  res: JevResult,
+  symbols: string[],
+): { decisions: Record<string, Decision>; risk: { probability: number | null } };
+
 /** 调 Jev。apiKey 由调用方注入（Cloudflare 里从 env 取），不读 process.env。 */
 export declare function evaluate(
   state: string,

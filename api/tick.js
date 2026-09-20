@@ -94,17 +94,8 @@ async function compute(key, positions, variant) {
     };
   }
 
-  const decisions = {};
-  for (const s of SYMBOLS) {
-    const a = res.answers[s];
-    if (!a) continue;
-    decisions[s] = {
-      action: a.choice || "hold",
-      probabilities: a.probabilities || {},
-      confidence: typeof a.confidence === "number" ? a.confidence : null,
-    };
-  }
-  const risk = res.answers.marketRisk || {};
+  // 解析逻辑在 lib/jev.js，yololab.cc 的 Worker 用的是同一份
+  const { decisions, risk } = jev.parseAnswers(res, SYMBOLS);
 
   // 先入历史，这样 recent 里能包含当前这一拍
   history.push({
