@@ -566,6 +566,8 @@ fetch("/api/criteria")
             + `<td class="${r.buyHoldPct >= 0 ? "up" : "down"}">${pct(r.buyHoldPct)}</td></tr>`;
         }
         html += "</tbody></table>";
+        html += '<p class="hint">两行都来自 5 分钟粒度的高保真回测，所以牛市数字与上面那张'
+          + "（小时粒度）的表略有差异（+17.19% vs +12.40%）。</p>";
         html += `<p class="hint warn-line">${rg.note}</p>`;
       }
       $("variantCmp").innerHTML = html;
