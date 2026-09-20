@@ -1,0 +1,52 @@
+{
+  "run_at": "2026-09-20T08:23:05.662Z",
+  "config": {
+    "samples": 70,
+    "step": 2,
+    "days": "7",
+    "threshold": 0.55,
+    "cooldownSec": 60,
+    "allocPct": 50,
+    "initCash": 10000
+  },
+  "window": {
+    "from": "2026-09-14T15:00:00.000Z",
+    "to": "2026-09-20T08:17:40.000Z"
+  },
+  "signals": {
+    "tally": {
+      "buy": 0,
+      "sell": 13,
+      "hold": 127
+    },
+    "perSymbol": {
+      "BTC": {
+        "buy": 0,
+        "sell": 6,
+        "hold": 64,
+        "noSignal": 0
+      },
+      "ETH": {
+        "buy": 0,
+        "sell": 7,
+        "hold": 63,
+        "noSignal": 0
+      }
+    }
+  },
+  "trades": [],
+  "account": {
+    "equity": 10000,
+    "realized": 0,
+    "fees": 0,
+    "pnlPct": 0,
+    "buyHoldPct": 2.763317137139602,
+    "alpha": -2.763317137139602
+  },
+  "meta": {
+    "avgLatencyMs": 467.1,
+    "cost": 0,
+    "marketCost": 0.0029164799999999978,
+    "errors": 0
+  }
+}

@@ -10,26 +10,14 @@
 
 const SYMBOLS = ["BTC", "ETH"];
 const TICK_MS = 5000;
-const FEE = 0.001;                 // 纸面交易的手续费假设，0.1%
 const LS_KEY = "jev-paper-trader.v1";
 
 const $ = (id) => document.getElementById(id);
+const freshAccount = () => Strategy.freshAccount(10000);
 
 // ---------------------------------------------------------------- 账户
-
-function freshAccount() {
-  return {
-    initCash: 10000,
-    cash: 10000,
-    positions: {},                 // { BTC: {qty, avgPrice} }
-    realized: 0,
-    fees: 0,
-    lastActionAt: {},              // 每个标的上次成交时间，用于冷却
-    decisions: [],                 // 决策历史
-    points: [],                    // 价格序列（画图用）
-    createdAt: Date.now(),
-  };
-}
+// 交易规则（阈值 / 冷却 / 风控 / 仓位 / 手续费）全部在 assets/strategy.js，
+// 与回测脚本 tools/backtest.js 共用同一份——两边不一致的话回测就没意义了。
 
 function load() {
   try {
@@ -64,85 +52,21 @@ const cfg = {
 };
 
 // ---------------------------------------------------------------- 交易执行
+// 全部委托给 assets/strategy.js，与回测共用同一份规则
 
-function equityAt(prices) {
-  let v = acct.cash;
-  for (const s of SYMBOLS) {
-    const p = acct.positions[s];
-    if (p && prices[s]) v += p.qty * prices[s];
-  }
-  return v;
-}
+function equityAt(prices) { return Strategy.equityAt(acct, prices); }
 
 function priceOf(s, snapshot) {
   return snapshot && snapshot.symbols && snapshot.symbols[s] ? snapshot.symbols[s].price : null;
 }
 
-/**
- * 把 Jev 的信号变成实际动作。
- * 返回 {action, note} —— action 是 hold 时 note 说明为什么没动。
- */
 function decide(s, dec, price, riskProb) {
-  if (!dec) return { action: "hold", note: "Jev 没返回这个标的" };
-
-  const signal = dec.action || "hold";
-  const prob = (dec.probabilities && dec.probabilities[signal]) || 0;
-
-  // 1) 风控闸门
-  if (cfg.riskGate && riskProb != null && riskProb >= 0.5 && signal === "buy") {
-    return { action: "hold", note: `风控拦截（风险概率 ${riskProb.toFixed(2)} ≥ 0.5）`, signal, prob };
-  }
-  // 2) 信号本身是 hold
-  if (signal === "hold") {
-    return { action: "hold", note: `信号 hold（${prob.toFixed(2)}）`, signal, prob };
-  }
-  // 3) 阈值
-  if (prob < cfg.threshold) {
-    return { action: "hold", note: `${signal} 概率 ${prob.toFixed(2)} < 阈值 ${cfg.threshold.toFixed(2)}`, signal, prob };
-  }
-  // 4) 冷却
-  const last = acct.lastActionAt[s] || 0;
-  const gap = (Date.now() - last) / 1000;
-  if (cfg.cooldownSec > 0 && gap < cfg.cooldownSec) {
-    return { action: "hold", note: `冷却中（${gap.toFixed(0)}s / ${cfg.cooldownSec}s）`, signal, prob };
-  }
-  // 5) 动作可行性
-  if (signal === "buy") {
-    if (acct.positions[s]) return { action: "hold", note: "已持仓，不重复买入", signal, prob };
-    if (acct.cash <= 1) return { action: "hold", note: "没有可用现金", signal, prob };
-  }
-  if (signal === "sell") {
-    if (!acct.positions[s]) return { action: "hold", note: "空仓，无可卖", signal, prob };
-  }
-  return { action: signal, note: "", signal, prob };
+  // now 用当前时间；回测时传的是历史时刻
+  return Strategy.decide(s, dec, price, riskProb, cfg, acct, Date.now());
 }
 
 function execute(s, action, price) {
-  if (action === "buy") {
-    const amount = acct.cash * (cfg.allocPct / 100);
-    if (amount <= 1) return "现金不足";
-    const fee = amount * FEE;
-    const qty = (amount - fee) / price;
-    acct.cash -= amount;
-    acct.fees += fee;
-    acct.positions[s] = { qty, avgPrice: price };
-    acct.lastActionAt[s] = Date.now();
-    return `买入 ${qty.toFixed(6)} @ ${price.toFixed(2)}（投入 ${amount.toFixed(2)}）`;
-  }
-  if (action === "sell") {
-    const p = acct.positions[s];
-    if (!p) return "空仓";
-    const gross = p.qty * price;
-    const fee = gross * FEE;
-    acct.cash += gross - fee;
-    acct.fees += fee;
-    acct.realized += (price - p.avgPrice) * p.qty - fee;
-    delete acct.positions[s];
-    acct.lastActionAt[s] = Date.now();
-    const pnlPct = ((price - p.avgPrice) / p.avgPrice) * 100;
-    return `卖出 ${p.qty.toFixed(6)} @ ${price.toFixed(2)}（${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%）`;
-  }
-  return "";
+  return Strategy.execute(s, action, price, cfg, acct, Date.now());
 }
 
 // ---------------------------------------------------------------- 主循环
