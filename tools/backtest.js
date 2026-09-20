@@ -41,6 +41,11 @@ const DAYS = arg("days", "1");                     // CoinGecko: days=1 → 5 �
 // coinbase：真实 5 分钟 K 线（翻页拼接），长周期也能算出 5m 动量
 // coingecko：免费层区间越长粒度越粗，days=90 只有小时粒度，5m/1m 只能给 null
 const SOURCE = arg("source", "coingecko");
+// 指定历史窗口（测牛熊必备）：--from 2022-01-01 --to 2022-07-01
+// CoinGecko 免费层只能取「最近 N 天」，给不了历史区间；Coinbase 可以。
+const FROM = arg("from", null);
+const TO = arg("to", null);
+const GRAN_MIN = parseInt(arg("gran", "5"), 10);
 const DELAY_MS = parseFloat(arg("delay", "2.6")) * 1000;
 const THRESHOLD = parseFloat(arg("threshold", "0.55"));
 const COOLDOWN = parseInt(arg("cooldown", "60"), 10) * 1000;   // 回测里按毫秒算
@@ -70,6 +75,16 @@ async function getJson(url, timeoutMs = 15000) {
 }
 
 async function fetchSeries() {
+  if (FROM && TO) {
+    const start = Date.parse(FROM), end = Date.parse(TO);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+      throw new Error(`--from/--to 不是有效区间：${FROM} → ${TO}`);
+    }
+    console.log(`  数据源 Coinbase Exchange（${GRAN_MIN} 分钟 K 线，翻页拼接）`);
+    console.log(`  区间 ${new Date(start).toISOString().slice(0, 10)} → ${new Date(end).toISOString().slice(0, 10)}`
+      + `（${((end - start) / 86400000).toFixed(0)} 天）`);
+    return await history.fetchAllWindow(SYMBOLS, start, end, GRAN_MIN * 60);
+  }
   if (SOURCE === "coinbase") {
     console.log(`  数据源 Coinbase Exchange（5 分钟 K 线，翻页拼接）—— 取 ${DAYS} 天`);
     return await history.fetchAll(SYMBOLS, parseFloat(DAYS));
@@ -293,6 +308,7 @@ const pctChange = (rows, i, back) => {
   const result = {
     run_at: new Date().toISOString(),
     config: { samples: idx.length, step: STEP, days: DAYS, source: SOURCE,
+              from: FROM, to: TO,
               granularityMin: (rows[1].ts - rows[0].ts) / 60000,
               threshold: THRESHOLD,
               cooldownSec: COOLDOWN/1000, allocPct: ALLOC, initCash: INIT_CASH },

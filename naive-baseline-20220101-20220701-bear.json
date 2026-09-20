@@ -1,0 +1,91 @@
+{
+  "run_at": "2026-09-20T09:48:52.102Z",
+  "config": {
+    "from": "2022-01-01",
+    "to": "2022-07-01",
+    "days": 90,
+    "granularityMin": 5,
+    "samples": 90,
+    "step": 576,
+    "cooldownSec": 60,
+    "allocPct": 50,
+    "monte": 200
+  },
+  "window": {
+    "from": "2022-01-02T00:00:00.000Z",
+    "to": "2022-06-30T23:55:00.000Z"
+  },
+  "rules": {
+    "涨就买跌就卖": {
+      "dist": {
+        "buy": 55,
+        "sell": 58,
+        "hold": 67
+      },
+      "trades": 52,
+      "buys": 26,
+      "sells": 26,
+      "winRate": 0.5,
+      "equity": 9634.76928968633,
+      "pnlPct": -3.6523071031366996
+    },
+    "只看24h": {
+      "dist": {
+        "buy": 90,
+        "sell": 90,
+        "hold": 0
+      },
+      "trades": 82,
+      "buys": 41,
+      "sells": 41,
+      "winRate": 0.4634146341463415,
+      "equity": 10418.532367007288,
+      "pnlPct": 4.1853236700728855
+    },
+    "只看1h": {
+      "dist": {
+        "buy": 87,
+        "sell": 93,
+        "hold": 0
+      },
+      "trades": 88,
+      "buys": 44,
+      "sells": 44,
+      "winRate": 0.45454545454545453,
+      "equity": 7420.9850575417295,
+      "pnlPct": -25.790149424582705
+    },
+    "反向(跌买)": {
+      "dist": {
+        "buy": 90,
+        "sell": 90,
+        "hold": 0
+      },
+      "trades": 80,
+      "buys": 41,
+      "sells": 39,
+      "winRate": 0.4358974358974359,
+      "equity": 4407.575460219767,
+      "pnlPct": -55.92424539780233
+    },
+    "一直空仓": {
+      "dist": {
+        "buy": 0,
+        "sell": 0,
+        "hold": 180
+      },
+      "trades": 0,
+      "buys": 0,
+      "sells": 0,
+      "winRate": null,
+      "equity": 10000,
+      "pnlPct": 0
+    }
+  },
+  "baselines": {
+    "randomMedian": -32.95375372517041,
+    "randomP10": -44.105700812860285,
+    "randomP90": -19.13693357209473,
+    "buyHoldPct": -64.8534291509909
+  }
+}

@@ -26,6 +26,17 @@ const BACKTEST = {
       + "比随机中位 +13.04% 高，但仍在随机 90% 区间（上界 +23.50%）内；"
       + "胜率反而从 48% 掉到 25%，收益靠少数几笔大赢撑起来。跑输买入持有 25.3 个百分点。",
   },
+  // 上面全是上涨行情。补了一轮熊市（2022 上半年，BTC 4.6 万 → 1.9 万），
+  // 再加一组不调模型的机械规则基线，用来回答「这是模型的功劳还是空仓本身的功劳」。
+  regimes: {
+    bull: { window: "2026-06-23 → 09-20", trendPct: 17.19, buyHoldPct: 43.81,
+            randomMedianPct: 13.69, cashPct: 0, bestNaivePct: 28.87, bestNaiveRule: "涨就买跌就卖" },
+    bear: { window: "2022-01-01 → 07-01", trendPct: -12.60, buyHoldPct: -64.85,
+            randomMedianPct: -32.95, cashPct: 0, bestNaivePct: 4.19, bestNaiveRule: "只看 24h 涨买跌卖" },
+    note: "熊市里「什么都不做」（0.00%）就跑赢了 Jev 的 −12.60%，"
+      + "还有一行 if 的机械规则拿到 +4.19%；牛市里最好的机械规则 +28.87% 也跑赢 Jev 的 +17.19%。"
+      + "两个窗口里都有不用模型的规则跑赢它 —— trend 在熊市的表现来自「空仓本身值钱」，不是模型的判断力。",
+  },
 };
 
 module.exports = function handler(req, res) {
@@ -41,5 +52,6 @@ module.exports = function handler(req, res) {
     risk: jev.RISK_CRITERIA,
     backtest: BACKTEST,
     fidelity: BACKTEST.fidelity,
+    regimes: BACKTEST.regimes,
   });
 };

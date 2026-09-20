@@ -31,6 +31,11 @@ const DAYS = arg("days", "7");
 // coinbase：真实 5 分钟 K 线，长周期也能算出 5m 动量（推荐做长周期对照时用）
 // coingecko：区间越长粒度越粗，days=90 只有小时粒度
 const SOURCE = arg("source", "coingecko");
+// 指定历史窗口（测牛熊以外的行情必备）：--from 2022-06-01 --to 2022-12-01
+// CoinGecko 免费层只能取「最近 N 天」，给不了历史区间；Coinbase 可以。
+const FROM = arg("from", null);
+const TO = arg("to", null);
+const GRAN_MIN = parseInt(arg("gran", "5"), 10);      // 粒度，分钟
 const DELAY_MS = parseFloat(arg("delay", "2.6")) * 1000;
 const ONLY = arg("variant", null);
 const MONTE = parseInt(arg("monte", "200"), 10);
@@ -52,7 +57,16 @@ async function getJson(url, t = 15000) {
 
 async function loadRows() {
   let series;
-  if (SOURCE === "coinbase") {
+  if (FROM && TO) {
+    const start = Date.parse(FROM), end = Date.parse(TO);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+      throw new Error(`--from/--to 不是有效区间：${FROM} → ${TO}`);
+    }
+    console.log(`  数据源 Coinbase Exchange（${GRAN_MIN} 分钟 K 线，翻页拼接）`);
+    console.log(`  区间 ${new Date(start).toISOString().slice(0, 10)} → ${new Date(end).toISOString().slice(0, 10)}`
+      + `（${((end - start) / 86400000).toFixed(0)} 天）`);
+    series = await history.fetchAllWindow(SYMBOLS, start, end, GRAN_MIN * 60);
+  } else if (SOURCE === "coinbase") {
     console.log(`  数据源 Coinbase Exchange（5 分钟 K 线，翻页拼接）—— 取 ${DAYS} 天`);
     series = await history.fetchAll(SYMBOLS, parseFloat(DAYS));
   } else {
@@ -93,6 +107,11 @@ function simulate(signals, rows, idx, cfg) {
       if (msg) trades.push({ n, symbol: s, action: d.action, price, ts: t, msg });
     }
   }
+  return settle(acct, trades, rows);
+}
+
+/** 结算：期末权益 + 胜率。simulate 和「边问边跑」两条路径共用，保证口径一致 */
+function settle(acct, trades, rows) {
   const last = rows[rows.length - 1];
   const eq = Strategy.equityAt(acct, { BTC: last.BTC, ETH: last.ETH });
   const sells = trades.filter((x) => x.action === "sell");
@@ -122,7 +141,11 @@ function simulate(signals, rows, idx, cfg) {
   console.log(`  取样 ${idx.length} 个（第 ${START} 点起，每 ${STEP} 点）\n`);
 
   // 预先算好每个样本的状态（三套 criteria 共用同一份 state，保证公平）
-  const states = idx.map((i) => {
+  // 构造与线上一致的 snapshot。注意：state 要等到跑的时候再构造，
+  // 因为 buildState 需要**当前持仓**——线上每拍都把持仓传给 Jev，
+  // 早期版本这里预计算成空持仓，等于 Jev 全程不知道自己已经买了，
+  // 而 sell 的 criteria 里明确写了「已有持仓且出现见顶迹象」。
+  const buildSnapshot = (i) => {
     const snap = { ts: rows[i].ts, symbols: {} };
     const back5m = perHour >= 12 ? Math.round(perHour / 12) : null;
     const back1m = perHour >= 60 ? Math.round(perHour / 60) : null;
@@ -137,8 +160,8 @@ function simulate(signals, rows, idx, cfg) {
         warmup: false,
       };
     }
-    return { i, snap, state: jev.buildState(snap, {}) };
-  });
+    return snap;
+  };
 
   const cfg = { threshold: 0.55, cooldownSec: 60, allocPct: 50, riskGate: true };
   const names = ONLY ? [ONLY] : Object.keys(jev.VARIANTS);
@@ -147,13 +170,18 @@ function simulate(signals, rows, idx, cfg) {
   const results = {};
   for (const v of names) {
     console.log(`=== criteria: ${v}（${jev.VARIANTS[v].label}）===`);
+    // 边问边跑：持仓随成交变化，下一拍的 state 里 Jev 就能看到真实持仓（和线上一致）
+    const acct = Strategy.freshAccount(INIT_CASH);
+    const trades = [];
     const signals = [];
     const dist = {};
     let errors = 0;
     for (let n = 0; n < idx.length; n++) {
-      const st = states[n];
+      const i = idx[n], t = rows[i].ts;
+      const snap = buildSnapshot(i);
+      const state = jev.buildState(snap, acct.positions);
       try {
-        const res = await jev.evaluate(st.state, jev.buildQuestions(SYMBOLS, v), key);
+        const res = await jev.evaluate(state, jev.buildQuestions(SYMBOLS, v), key);
         const risk = res.answers.marketRisk ? res.answers.marketRisk.probability : null;
         const row = {};
         for (const s of SYMBOLS) {
@@ -162,6 +190,13 @@ function simulate(signals, rows, idx, cfg) {
           const signal = a.choice || "hold";
           dist[signal] = (dist[signal] || 0) + 1;
           row[s] = { signal, prob: (a.probabilities && a.probabilities[signal]) || 0, risk };
+
+          // 归一化成 api/tick.js 给前端的形状，Strategy 收到的才和线上一致
+          const dec = { action: signal, probabilities: a.probabilities || {}, confidence: a.confidence };
+          const d = Strategy.decide(s, dec, snap.symbols[s].price, risk, cfg, acct, t);
+          const msg = (d.action === "buy" || d.action === "sell")
+            ? Strategy.execute(s, d.action, snap.symbols[s].price, cfg, acct, t) : "";
+          if (msg) trades.push({ n, symbol: s, action: d.action, price: snap.symbols[s].price, ts: t, msg });
         }
         signals.push(row);
       } catch (e) {
@@ -172,7 +207,7 @@ function simulate(signals, rows, idx, cfg) {
       process.stdout.write(`\r  进度 ${n + 1}/${idx.length}   `);
       await sleep(DELAY_MS);
     }
-    const sim = simulate(signals, rows, idx, cfg);
+    const sim = settle(acct, trades, rows);
     results[v] = { label: jev.VARIANTS[v].label, dist, sim, errors,
                    signals: signals.map((x) => x && Object.fromEntries(
                      Object.entries(x).map(([k, y]) => [k, y.signal]))) };

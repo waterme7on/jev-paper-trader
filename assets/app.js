@@ -548,6 +548,26 @@ fetch("/api/criteria")
       if (b.fidelity && b.fidelity.note) {
         html += `<p class="hint">稳健性：${b.fidelity.note}</p>`;
       }
+      // 上面那张表全是上涨行情，补一段跨行情对照，别让人以为结论只对牛市成立
+      const rg = b.regimes;
+      if (rg && rg.bull && rg.bear) {
+        html += '<p class="hint" style="margin-top:8px"><b>跨行情检验</b></p>';
+        html += '<table class="cmp-t"><thead><tr><th>行情</th><th>trend</th>'
+          + '<th>一直空仓</th><th>最好的机械规则</th><th>随机中位</th><th>买入持有</th>'
+          + '</tr></thead><tbody>';
+        for (const [k, label] of [["bull", "牛市"], ["bear", "熊市"]]) {
+          const r = rg[k];
+          html += `<tr><td>${label}<div class="lb">${r.window}</div></td>`
+            + `<td class="${r.trendPct >= 0 ? "up" : "down"}">${pct(r.trendPct)}</td>`
+            + `<td>${pct(r.cashPct)}</td>`
+            + `<td class="${r.bestNaivePct >= 0 ? "up" : "down"}">${pct(r.bestNaivePct)}`
+            + `<div class="lb">${r.bestNaiveRule}</div></td>`
+            + `<td>${pct(r.randomMedianPct)}</td>`
+            + `<td class="${r.buyHoldPct >= 0 ? "up" : "down"}">${pct(r.buyHoldPct)}</td></tr>`;
+        }
+        html += "</tbody></table>";
+        html += `<p class="hint warn-line">${rg.note}</p>`;
+      }
       $("variantCmp").innerHTML = html;
     };
 
