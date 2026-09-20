@@ -18,6 +18,7 @@ const path = require("path");
 const ROOT = path.join(__dirname, "..");
 const jev = require(path.join(ROOT, "lib/jev.js"));
 const Strategy = require(path.join(ROOT, "assets/strategy.js"));
+const history = require(path.join(ROOT, "lib/history.js"));
 
 const SYMBOLS = ["BTC", "ETH"];
 const IDS = { BTC: "bitcoin", ETH: "ethereum" };
@@ -27,6 +28,9 @@ const arg = (n, d) => { const i = argv.indexOf("--" + n); return i >= 0 && argv[
 const SAMPLES = parseInt(arg("samples", "36"), 10);
 const STEP = parseInt(arg("step", "4"), 10);
 const DAYS = arg("days", "7");
+// coinbase：真实 5 分钟 K 线，长周期也能算出 5m 动量（推荐做长周期对照时用）
+// coingecko：区间越长粒度越粗，days=90 只有小时粒度
+const SOURCE = arg("source", "coingecko");
 const DELAY_MS = parseFloat(arg("delay", "2.6")) * 1000;
 const ONLY = arg("variant", null);
 const MONTE = parseInt(arg("monte", "200"), 10);
@@ -47,10 +51,17 @@ async function getJson(url, t = 15000) {
 }
 
 async function loadRows() {
-  const series = {};
-  for (const s of SYMBOLS) {
-    const d = await getJson(`https://api.coingecko.com/api/v3/coins/${IDS[s]}/market_chart?vs_currency=usd&days=${DAYS}`);
-    series[s] = ((d && d.prices) || []).map(([ts, p]) => ({ ts, price: p }));
+  let series;
+  if (SOURCE === "coinbase") {
+    console.log(`  数据源 Coinbase Exchange（5 分钟 K 线，翻页拼接）—— 取 ${DAYS} 天`);
+    series = await history.fetchAll(SYMBOLS, parseFloat(DAYS));
+  } else {
+    console.log(`  数据源 CoinGecko（days=${DAYS}）`);
+    series = {};
+    for (const s of SYMBOLS) {
+      const d = await getJson(`https://api.coingecko.com/api/v3/coins/${IDS[s]}/market_chart?vs_currency=usd&days=${DAYS}`);
+      series[s] = ((d && d.prices) || []).map(([ts, p]) => ({ ts, price: p }));
+    }
   }
   const spine = series.BTC; const eth = series.ETH; let j = 0;
   return spine.map((b) => {
@@ -104,7 +115,8 @@ function simulate(signals, rows, idx, cfg) {
   const perHour = Math.max(1, Math.round(3600000 / (rows[1].ts - rows[0].ts)));
   console.log(`  ${rows.length} 个点，粒度 ${(rows[1].ts - rows[0].ts) / 60000} 分钟（${perHour} 点/小时）`);
 
-  const START = Math.min(Math.floor(rows.length / 3), 30);
+  // 前面必须留够 24 小时窗口，否则 change24h 实际只跨了几个点却标成 24h
+  const START = Math.min(Math.floor(rows.length / 3), Math.max(30, perHour * 24));
   const idx = [];
   for (let i = START; i < rows.length && idx.length < SAMPLES; i += STEP) idx.push(i);
   console.log(`  取样 ${idx.length} 个（第 ${START} 点起，每 ${STEP} 点）\n`);
@@ -220,7 +232,9 @@ function simulate(signals, rows, idx, cfg) {
 
   const out = {
     run_at: new Date().toISOString(),
-    config: { samples: idx.length, step: STEP, days: DAYS, variant: ONLY || "all",
+    config: { samples: idx.length, step: STEP, days: DAYS, source: SOURCE,
+              granularityMin: (rows[1].ts - rows[0].ts) / 60000,
+              variant: ONLY || "all",
               threshold: cfg.threshold, cooldownSec: cfg.cooldownSec, allocPct: cfg.allocPct },
     window: { from: new Date(rows[START].ts).toISOString(), to: new Date(last.ts).toISOString() },
     variants: results,

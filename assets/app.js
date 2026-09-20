@@ -487,32 +487,70 @@ fetch("/api/criteria")
       $("variantVal").textContent = (c.variants && c.variants[cfg.variant]
         ? c.variants[cfg.variant].label : cfg.variant);
       showCriteria();
+      renderCmp();
       // 换了 criteria 就立刻重算，别等到下一拍
       if (cfg.running) tick();
     });
 
     showCriteria();
 
-    // 三套对照
+    // 三套对照。
+    // 结论文字全部按接口给的数字算出来，不硬编码——否则换了回测结果，
+    // 页面还在一本正经地说上一轮的旧数字。
     const b = c.backtest || {};
     const base = b.baseline || {};
-    let html = '<table class="cmp-t"><thead><tr>'
-      + "<th>criteria</th><th>buy</th><th>sell</th><th>hold</th><th>成交</th><th>收益</th></tr></thead><tbody>";
-    for (const [k, v] of Object.entries(c.variants || {})) {
-      const r = v.backtest;
-      html += `<tr${k === cfg.variant ? ' class="cur"' : ""}><td>${k}<div class="lb">${v.label}</div></td>`
-        + (r ? `<td>${r.buy}</td><td>${r.sell}</td><td>${r.hold}</td><td>${r.trades}</td>`
-              + `<td class="${r.pnlPct >= 0 ? "up" : "down"}">${r.pnlPct >= 0 ? "+" : ""}${r.pnlPct.toFixed(2)}%</td>`
-            : '<td colspan="5">—</td>')
-        + "</tr>";
-    }
-    html += "</tbody></table>";
-    html += `<p class="hint">基线：随机信号中位 ${base.randomMedianPct >= 0 ? "+" : ""}${base.randomMedianPct}%`
-      + `（90% 区间 ${base.randomP10Pct}% ~ ${base.randomP90Pct}%）`
-      + ` · 买入持有 ${base.buyHoldPct >= 0 ? "+" : ""}${base.buyHoldPct}%。`
-      + `${b.note || ""}</p>`;
-    html += '<p class="hint warn-line"><b>trend 那 +2.17% 只比随机信号的 90 分位（+2.06%）高一点，'
-      + '落在噪声区间内——没有证据说明它有 edge。</b></p>';
-    $("variantCmp").innerHTML = html;
+    const pct = (v) => (v >= 0 ? "+" : "") + Number(v).toFixed(2) + "%";
+
+    const renderCmp = () => {
+      let html = '<table class="cmp-t"><thead><tr>'
+        + "<th>criteria</th><th>buy</th><th>sell</th><th>hold</th>"
+        + "<th>成交</th><th>胜率</th><th>收益</th></tr></thead><tbody>";
+      for (const [k, v] of Object.entries(c.variants || {})) {
+        const r = v.backtest;
+        html += `<tr${k === cfg.variant ? ' class="cur"' : ""}><td>${k}<div class="lb">${v.label}</div></td>`
+          + (r ? `<td>${r.buy}</td><td>${r.sell}</td><td>${r.hold}</td><td>${r.trades}</td>`
+                + `<td>${r.winRate == null ? "—" : (r.winRate * 100).toFixed(0) + "%"}</td>`
+                + `<td class="${r.pnlPct >= 0 ? "up" : "down"}">${pct(r.pnlPct)}</td>`
+              : '<td colspan="6">—</td>')
+          + "</tr>";
+      }
+      html += "</tbody></table>";
+      html += `<p class="hint">基线：随机信号中位 ${pct(base.randomMedianPct)}`
+        + `（90% 区间 ${pct(base.randomP10Pct)} ~ ${pct(base.randomP90Pct)}）`
+        + ` · 买入持有 ${pct(base.buyHoldPct)}。${b.note || ""}</p>`;
+
+      // 当前这套到底怎么样，按数字自己下判断
+      const cur = (c.variants || {})[cfg.variant];
+      const r = cur && cur.backtest;
+      if (r && r.trades > 0) {
+        const vsRandom = r.pnlPct - base.randomMedianPct;
+        const vsHold = r.pnlPct - base.buyHoldPct;
+        const inNoise = r.pnlPct <= base.randomP90Pct;
+        let verdict;
+        if (vsRandom < 0) {
+          verdict = `<b>${cfg.variant} 的 ${pct(r.pnlPct)} 比随机信号的中位数（${pct(base.randomMedianPct)}）还低</b>`
+            + `——没有任何证据说明它有 edge。`;
+        } else if (inNoise) {
+          verdict = `<b>${cfg.variant} 的 ${pct(r.pnlPct)} 落在随机信号的噪声区间内</b>，看不出 edge。`;
+        } else {
+          verdict = `${cfg.variant} 的 ${pct(r.pnlPct)} 高于随机 90 分位，`
+            + `但只跑了 ${b.note ? "一轮" : "一轮"}回测，仍不足以确认。`;
+        }
+        if (vsHold < 0) {
+          verdict += ` 而且<b>跑输「买入并持有」${Math.abs(vsHold).toFixed(1)} 个百分点</b>`
+            + `（${pct(base.buyHoldPct)}）——这轮行情里，频繁进出反而把收益磨掉了。`;
+        }
+        html += `<p class="hint warn-line">${verdict}</p>`;
+      } else if (r) {
+        html += `<p class="hint warn-line"><b>${cfg.variant} 在这一轮回测里一笔都没成交</b>`
+          + `——${r.buy} 次 buy / ${r.sell} 次 sell，${r.hold} 次 hold。页面会一直空仓。</p>`;
+      }
+      if (b.fidelity && b.fidelity.note) {
+        html += `<p class="hint">稳健性：${b.fidelity.note}</p>`;
+      }
+      $("variantCmp").innerHTML = html;
+    };
+
+    renderCmp();
   })
   .catch(() => { $("criteria").textContent = "（加载失败）"; });

@@ -23,6 +23,7 @@ const ROOT = path.join(__dirname, "..");
 
 const jev = require(path.join(ROOT, "lib/jev.js"));
 const Strategy = require(path.join(ROOT, "assets/strategy.js"));
+const history = require(path.join(ROOT, "lib/history.js"));
 
 const SYMBOLS = ["BTC", "ETH"];
 const IDS = { BTC: "bitcoin", ETH: "ethereum" };
@@ -37,6 +38,9 @@ const arg = (name, def) => {
 const SAMPLES = parseInt(arg("samples", "60"), 10);
 const STEP = parseInt(arg("step", "4"), 10);      // 每隔几个点取一个样本
 const DAYS = arg("days", "1");                     // CoinGecko: days=1 → 5 分钟粒度
+// coinbase：真实 5 分钟 K 线（翻页拼接），长周期也能算出 5m 动量
+// coingecko：免费层区间越长粒度越粗，days=90 只有小时粒度，5m/1m 只能给 null
+const SOURCE = arg("source", "coingecko");
 const DELAY_MS = parseFloat(arg("delay", "2.6")) * 1000;
 const THRESHOLD = parseFloat(arg("threshold", "0.55"));
 const COOLDOWN = parseInt(arg("cooldown", "60"), 10) * 1000;   // 回测里按毫秒算
@@ -66,6 +70,11 @@ async function getJson(url, timeoutMs = 15000) {
 }
 
 async function fetchSeries() {
+  if (SOURCE === "coinbase") {
+    console.log(`  数据源 Coinbase Exchange（5 分钟 K 线，翻页拼接）—— 取 ${DAYS} 天`);
+    return await history.fetchAll(SYMBOLS, parseFloat(DAYS));
+  }
+  console.log(`  数据源 CoinGecko（days=${DAYS}）`);
   const out = {};
   for (const s of SYMBOLS) {
     const d = await getJson(
@@ -120,8 +129,10 @@ const pctChange = (rows, i, back) => {
   const perHour = Math.round(3600000 / (rows[1].ts - rows[0].ts));
   console.log(`  粒度约 ${(rows[1].ts - rows[0].ts) / 60000} 分钟/点（${perHour} 点/小时）`);
 
-  // 采样：从第 30 个点开始（前面留够窗口算 24h/1h）
-  const START = Math.min(30, Math.floor(rows.length / 3));
+  // 采样起点：前面必须留够 24 小时的窗口，否则 change24h 实际只跨了几个点
+  // （5 分钟粒度下 24h = 288 个点；早期版本固定取第 30 点，会把 2.5 小时的变化标成 24h）
+  const need = perHour * 24;
+  const START = Math.min(Math.max(30, need), Math.floor(rows.length / 3));
   const idx = [];
   for (let i = START; i < rows.length && idx.length < SAMPLES; i += STEP) idx.push(i);
   console.log(`  取样 ${idx.length} 个（从第 ${START} 点起，每 ${STEP} 点一个）\n`);
@@ -281,7 +292,9 @@ const pctChange = (rows, i, back) => {
 
   const result = {
     run_at: new Date().toISOString(),
-    config: { samples: idx.length, step: STEP, days: DAYS, threshold: THRESHOLD,
+    config: { samples: idx.length, step: STEP, days: DAYS, source: SOURCE,
+              granularityMin: (rows[1].ts - rows[0].ts) / 60000,
+              threshold: THRESHOLD,
               cooldownSec: COOLDOWN/1000, allocPct: ALLOC, initCash: INIT_CASH },
     window: { from: new Date(rows[START].ts).toISOString(), to: new Date(last.ts).toISOString() },
     signals: { tally, perSymbol },

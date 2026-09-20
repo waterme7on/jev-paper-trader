@@ -4,7 +4,10 @@
   "private": true,
   "description": "用 typesafe-ai/jev 做决策引擎的 BTC / ETH 纸面交易台（不碰真钱）",
   "scripts": {
-    "dev": "echo '用 vercel dev 起本地环境：npx vercel dev' && exit 1"
+    "test": "node tools/test-strategy.js",
+    "backtest": "node tools/backtest.js --days 7 --samples 70 --step 2",
+    "compare": "node tools/compare-criteria.js --days 90 --samples 90 --step 24",
+    "compare:quick": "node tools/compare-criteria.js --days 7 --samples 36 --step 4"
   },
   "engines": {
     "node": ">=18"
