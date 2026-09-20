@@ -4,7 +4,12 @@
   "private": true,
   "description": "用 typesafe-ai/jev 做决策引擎的 BTC / ETH 纸面交易台（不碰真钱）",
   "scripts": {
-    "test": "node tools/test-strategy.js",
+    "test": "node tools/test-strategy.js && node tools/test-eval.js",
+    "test:strategy": "node tools/test-strategy.js",
+    "test:eval": "node tools/test-eval.js",
+    "eval": "node tools/evaluate.js --days 7 --samples 36 --step 4 --providers jev:trend,rule:trend-up,rule:h24,rule:flat",
+    "eval:bull": "node tools/evaluate.js --from 2026-06-23 --to 2026-09-20 --samples 89 --step 288 --providers jev:trend,rule:trend-up,rule:h24,rule:flat",
+    "eval:bear": "node tools/evaluate.js --from 2022-01-01 --to 2022-07-01 --samples 90 --step 576 --providers jev:trend,rule:trend-up,rule:h24,rule:flat",
     "backtest": "node tools/backtest.js --days 7 --samples 70 --step 2",
     "compare": "node tools/compare-criteria.js --days 90 --samples 90 --step 24",
     "compare:quick": "node tools/compare-criteria.js --days 7 --samples 36 --step 4"

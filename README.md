@@ -240,6 +240,52 @@ node tools/compare-criteria.js --from 2022-01-01 --to 2022-07-01 --gran 5 --samp
 
 ---
 
+## 复用：这套验证流水线
+
+上面这些结论是用一套可复用的工具跑出来的。**信号源被抽象成一个接口**（`lib/eval.js` 的 provider），所以「Jev 变体」「一行 if 的机械规则」「随机信号」是同一种东西，可以放在同一张表里比：
+
+```js
+// provider 接口：给一份行情快照，返回每个标的的动作
+async signal(snapshot, ctx) -> { BTC: { action, prob, risk }, ETH: { ... } }
+// ctx.positions 是当前持仓 —— 必须传给模型，否则它不知道自己已经买了
+```
+
+一条命令把模型和机械规则放在同一批样本上比：
+
+```bash
+# 牛市
+node tools/evaluate.js --from 2026-06-23 --to 2026-09-20 --samples 89 --step 288 \
+     --providers jev:trend,rule:trend-up,rule:h24,rule:flat
+
+# 熊市（同一批样本、同一套规则）
+node tools/evaluate.js --from 2022-01-01 --to 2022-07-01 --samples 90 --step 576 \
+     --providers jev:trend,rule:trend-up,rule:h24,rule:flat
+
+# 只跑机械规则：零 API 调用，秒级，用来先探行情
+node tools/evaluate.js --days 30 --providers rule:h24,rule:trend-up
+```
+
+可用的 provider：
+
+| 写法 | 说明 | 成本 |
+|---|---|---|
+| `jev:<variant>` | 调模型，`variant` ∈ `strict` / `reversion` / `trend` | 受 30 次/60 秒限流 |
+| `rule:trend-up` | 1h 且 24h 同向才买/卖，否则不动 | 零 |
+| `rule:h24` / `rule:h1` | 只看 24h / 1h 的符号 | 零 |
+| `rule:revert` | 反向，跌买涨卖 | 零 |
+| `rule:flat` | 一直空仓 | 零 |
+| `random` | 随机信号（默认也作为基线跑 200 次蒙特卡洛） | 零 |
+
+每次跑都会自动给出**随机基线**（中位数 + 90% 区间）、**买入持有**和**一直空仓**三个参照，并逐项给出判断。
+
+**为什么值得抽象**：这套逻辑最初在三份脚本里各写了一遍，`pctChange`、`START`、`equityAt` 全是三份拷贝。而**重复就是 bug 的来源**——「采样起点没按粒度算」要在两个地方各修一次，「随机基线概率给 0.9 还是 1」两份还不一样。现在只有一份，并配了 37 项离线单元测试（`tools/test-eval.js`）守住这几类坑：
+
+```bash
+npm test        # 交易规则 35 项 + 评估框架 37 项，都是离线的，秒级
+```
+
+---
+
 ## 架构
 
 ```
@@ -347,11 +393,22 @@ npx vercel dev          # 需要 .env 里写 AI_GATEWAY_API_KEY
 ```
 index.html            页面结构
 assets/app.js         主循环、账户、执行、渲染、画图
+assets/strategy.js    交易规则（UMD，浏览器与 Node 共用同一份）
 assets/style.css      样式（深色）
 api/tick.js           一个节拍：行情 → Jev → 决策（含缓存与并发合并）
-api/criteria.js       暴露判别标准，避免前后端各写一份
+api/criteria.js       暴露判别标准与回测结果，避免前后端各写一份
 lib/market.js         行情：CoinGecko 主 + Coinbase 兜底 + 动量计算
-lib/jev.js            Jev 客户端：state 组装、questions 定义、限流头解析
+lib/jev.js            Jev 客户端：state 组装、三套 criteria、限流头解析
+lib/history.js        历史 K 线：Coinbase 任意区间 + 粒度，翻页拼接
+lib/eval.js           回测框架：采样 / 快照 / provider 接口 / 结算 / 基线 / 判断
+tools/evaluate.js     统一入口：模型与机械规则同批样本对比
+tools/backtest.js     单套详细回测（含「为什么没成交」拆解）
+tools/compare-criteria.js  三套 criteria 对照 + 随机基线
+tools/naive-baseline.js    只跑机械规则（零 API 调用）
+tools/test-strategy.js     交易规则单元测试（35 项，离线）
+tools/test-eval.js         评估框架单元测试（37 项，离线）
+criteria-compare-*.json    各轮回测原始结果
+naive-baseline-*.json      机械规则基线原始结果
 ```
 
 ## 来源
