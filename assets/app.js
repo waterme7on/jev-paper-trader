@@ -49,6 +49,7 @@ const cfg = {
   cooldownSec: 60,
   allocPct: 50,
   riskGate: true,
+  variant: "trend",        // 服务端默认值，加载 /api/criteria 后以服务端为准
 };
 
 // ---------------------------------------------------------------- 交易执行
@@ -87,7 +88,8 @@ function posParam() {
 async function tick() {
   let data;
   try {
-    const res = await fetch("/api/tick?pos=" + encodeURIComponent(posParam()), { cache: "no-store" });
+    const res = await fetch("/api/tick?pos=" + encodeURIComponent(posParam())
+      + "&variant=" + encodeURIComponent(cfg.variant), { cache: "no-store" });
     data = await res.json();
     if (res.status === 429) data.throttled = true;
   } catch (e) {
@@ -450,12 +452,64 @@ setInterval(() => {
 
 window.addEventListener("resize", drawChart);
 
-// 展示判别标准
+// 判别标准：三套可切换，并把回测数字摆在旁边
 fetch("/api/criteria")
   .then((r) => r.json())
   .then((c) => {
-    $("criteria").textContent =
-      "动作（每个标的，choice）\n" + JSON.stringify(c.action, null, 2) +
-      "\n\n风控（boolean）\n" + JSON.stringify(c.risk, null, 2);
+    const sel = $("variant");
+    sel.innerHTML = "";
+    Object.entries(c.variants || {}).forEach(([k, v]) => {
+      const bt = v.backtest;
+      const opt = document.createElement("option");
+      opt.value = k;
+      // 把实测结果写进选项，避免「挑一个能成交的」看起来像没代价
+      opt.textContent = v.label + (bt ? `  —  回测：${bt.trades} 笔成交，${bt.pnlPct >= 0 ? "+" : ""}${bt.pnlPct.toFixed(2)}%` : "");
+      sel.appendChild(opt);
+    });
+    cfg.variant = c.defaultVariant || cfg.variant;
+    sel.value = cfg.variant;
+    $("variantVal").textContent = (c.variants && c.variants[cfg.variant]
+      ? c.variants[cfg.variant].label : cfg.variant);
+
+    const showCriteria = () => {
+      const cur = (c.variants || {})[cfg.variant];
+      $("criteria").textContent =
+        "动作（每个标的，choice）—— 当前：" + cfg.variant + "\n"
+        + JSON.stringify(cur ? cur.criteria : {}, null, 2)
+        + "\n\n风控（boolean）\n" + JSON.stringify(c.risk, null, 2);
+    };
+
+    sel.addEventListener("change", () => {
+      cfg.variant = sel.value;
+      $("variantVal").textContent = (c.variants && c.variants[cfg.variant]
+        ? c.variants[cfg.variant].label : cfg.variant);
+      showCriteria();
+      // 换了 criteria 就立刻重算，别等到下一拍
+      if (cfg.running) tick();
+    });
+
+    showCriteria();
+
+    // 三套对照
+    const b = c.backtest || {};
+    const base = b.baseline || {};
+    let html = '<table class="cmp-t"><thead><tr>'
+      + "<th>criteria</th><th>buy</th><th>sell</th><th>hold</th><th>成交</th><th>收益</th></tr></thead><tbody>";
+    for (const [k, v] of Object.entries(c.variants || {})) {
+      const r = v.backtest;
+      html += `<tr${k === cfg.variant ? ' class="cur"' : ""}><td>${k}<div class="lb">${v.label}</div></td>`
+        + (r ? `<td>${r.buy}</td><td>${r.sell}</td><td>${r.hold}</td><td>${r.trades}</td>`
+              + `<td class="${r.pnlPct >= 0 ? "up" : "down"}">${r.pnlPct >= 0 ? "+" : ""}${r.pnlPct.toFixed(2)}%</td>`
+            : '<td colspan="5">—</td>')
+        + "</tr>";
+    }
+    html += "</tbody></table>";
+    html += `<p class="hint">基线：随机信号中位 ${base.randomMedianPct >= 0 ? "+" : ""}${base.randomMedianPct}%`
+      + `（90% 区间 ${base.randomP10Pct}% ~ ${base.randomP90Pct}%）`
+      + ` · 买入持有 ${base.buyHoldPct >= 0 ? "+" : ""}${base.buyHoldPct}%。`
+      + `${b.note || ""}</p>`;
+    html += '<p class="hint warn-line"><b>trend 那 +2.17% 只比随机信号的 90 分位（+2.06%）高一点，'
+      + '落在噪声区间内——没有证据说明它有 edge。</b></p>';
+    $("variantCmp").innerHTML = html;
   })
   .catch(() => { $("criteria").textContent = "（加载失败）"; });

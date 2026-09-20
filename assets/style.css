@@ -102,6 +102,19 @@ td.note{color:var(--fg3);font-size:11px;white-space:normal}
 .field input[type=range]{width:150px;accent-color:var(--accent)}
 .field.check{flex-direction:row;align-items:center;gap:6px;min-width:auto}
 .field.check input{accent-color:var(--accent)}
+.field.wide{min-width:320px;flex:1 1 320px}
+.field select{background:var(--panel2);color:var(--fg);border:1px solid var(--line);
+  border-radius:6px;padding:6px 8px;font-size:12px;max-width:100%}
+
+/* 三套 criteria 的对照表 */
+.cmp{margin:8px 0 0}
+.cmp-t{width:100%;border-collapse:collapse;font-size:12px}
+.cmp-t th{text-align:left;color:var(--fg3);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--line)}
+.cmp-t td{padding:6px 8px;border-bottom:1px solid rgba(36,48,68,.5);font-variant-numeric:tabular-nums}
+.cmp-t tr.cur{background:rgba(96,165,250,.08)}
+.cmp-t td .lb{color:var(--fg3);font-size:10px;font-weight:400}
+.cmp-t td.up{color:var(--buy)} .cmp-t td.down{color:var(--sell)}
+.cmp .warn-line{color:var(--warn);margin-top:6px}
 
 /* ---------- code ---------- */
 .code{background:var(--panel2);border:1px solid var(--line);border-radius:8px;

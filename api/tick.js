@@ -17,6 +17,10 @@ const jev = require("../lib/jev");
 const TICK_MS = 5000;
 const HISTORY_MAX = 60;
 
+// 默认用 trend：三套里唯一会真的产生成交的那套（见 README 的对照实验）。
+// 其余两套在回测里一次 buy 都没说过，页面会一直空仓、看不到买卖点。
+const DEFAULT_VARIANT = "trend";
+
 // 模块级：同一 lambda 实例复用
 const cache = new Map();      // key -> { at, payload }
 let inflight = new Map();     // key -> Promise
@@ -44,6 +48,11 @@ function positionSignature(positions) {
   return SYMBOLS.map((s) => (positions[s] ? "H" : "-")).join("");
 }
 
+/** 缓存 key 必须带上 variant，否则换 criteria 会拿到另一套的答案 */
+function cacheKey(positions, variant) {
+  return positionSignature(positions) + "|" + variant;
+}
+
 function trimMaps(now) {
   for (const [k, v] of cache) {
     if (now - v.at > TICK_MS * 4) cache.delete(k);
@@ -54,7 +63,7 @@ function trimMaps(now) {
   while (history.length > HISTORY_MAX) history.shift();
 }
 
-async function compute(key, positions) {
+async function compute(key, positions, variant) {
   const snapshot = await market.getSnapshot();
 
   const apiKey = process.env.AI_GATEWAY_API_KEY;
@@ -68,7 +77,7 @@ async function compute(key, positions) {
   }
 
   const state = jev.buildState(snapshot, positions);
-  const questions = jev.buildQuestions(SYMBOLS);
+  const questions = jev.buildQuestions(SYMBOLS, variant);
 
   let res;
   try {
@@ -104,6 +113,7 @@ async function compute(key, positions) {
     decisions: Object.fromEntries(SYMBOLS.map((s) => [s, decisions[s] ? decisions[s].action : null])),
     risk: risk.probability == null ? null : risk.probability,
     cost: res.gateway.cost == null ? null : res.gateway.cost,
+    variant: variant,
   });
 
   const payload = {
@@ -112,6 +122,7 @@ async function compute(key, positions) {
     source: snapshot.source,
     snapshot,
     decisions,
+    variant,
     risk: { probability: risk.probability == null ? null : risk.probability },
     meta: {
       latencyMs: res.latencyMs,
@@ -133,8 +144,10 @@ module.exports = async function handler(req, res) {
 
   const q = (req.query && req.query.pos) || posFromUrl(req.url);
   const positions = parsePositions(q);
+  const variant = ((req.query && req.query.variant) || variantFromUrl(req.url) || DEFAULT_VARIANT);
+  const safeVariant = jev.VARIANTS[variant] ? variant : DEFAULT_VARIANT;
   const now = Date.now();
-  const key = positionSignature(positions);
+  const key = cacheKey(positions, safeVariant);
 
   trimMaps(now);
 
@@ -154,7 +167,7 @@ module.exports = async function handler(req, res) {
   }
 
   // 3) 本拍第一个，真正去算
-  const p = compute(key, positions);
+  const p = compute(key, positions, safeVariant);
   inflight.set(key, { at: now, promise: p });
   let payload;
   try {
@@ -170,6 +183,13 @@ module.exports = async function handler(req, res) {
   res.setHeader("x-tick-cache", "miss");
   return res.status(payload.ok ? 200 : (payload.throttled ? 429 : 502)).json(payload);
 };
+
+function variantFromUrl(url) {
+  try {
+    const u = new URL(url, "http://x");
+    return u.searchParams.get("variant");
+  } catch (_) { return null; }
+}
 
 function posFromUrl(url) {
   try {

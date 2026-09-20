@@ -73,6 +73,10 @@
   <section class="panel">
     <div class="panel-head"><h2>控制</h2></div>
     <div class="controls">
+      <label class="field wide">
+        <span>判别标准（criteria）<b id="variantVal">—</b></span>
+        <select id="variant"></select>
+      </label>
       <button id="toggle" class="btn primary">启动</button>
       <button id="reset" class="btn danger">清空账户</button>
       <label class="field">
@@ -99,7 +103,8 @@
     <p class="hint">下面这段就是每一拍真正发给 Jev 的东西。信号对不对，先看它看到的东西对不对。</p>
     <pre id="stateEcho" class="code">（启动后显示）</pre>
     <details>
-      <summary>判别标准（criteria）</summary>
+      <summary>判别标准（criteria）—— 三套措辞，行为差别极大</summary>
+      <div id="variantCmp" class="cmp"></div>
       <pre class="code" id="criteria">—</pre>
     </details>
   </section>

@@ -1,0 +1,505 @@
+{
+  "run_at": "2026-09-20T08:38:34.823Z",
+  "config": {
+    "samples": 35,
+    "step": 4,
+    "days": "7",
+    "variant": "all",
+    "threshold": 0.55,
+    "cooldownSec": 60,
+    "allocPct": 50
+  },
+  "window": {
+    "from": "2026-09-14T15:00:00.000Z",
+    "to": "2026-09-20T08:31:10.000Z"
+  },
+  "variants": {
+    "strict": {
+      "label": "严格确认（要求短+中周期同向）",
+      "dist": {
+        "hold": 64,
+        "sell": 6
+      },
+      "sim": {
+        "trades": 0,
+        "buys": 0,
+        "sells": 0,
+        "winRate": null,
+        "equity": 10000,
+        "pnlPct": 0,
+        "realized": 0,
+        "fees": 0
+      },
+      "errors": 0,
+      "signals": [
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        }
+      ]
+    },
+    "reversion": {
+      "label": "均值回归（逆势，跌买涨卖）",
+      "dist": {
+        "hold": 70
+      },
+      "sim": {
+        "trades": 0,
+        "buys": 0,
+        "sells": 0,
+        "winRate": null,
+        "equity": 10000,
+        "pnlPct": 0,
+        "realized": 0,
+        "fees": 0
+      },
+      "errors": 0,
+      "signals": [
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        }
+      ]
+    },
+    "trend": {
+      "label": "趋势跟随（只看中周期方向）",
+      "dist": {
+        "buy": 29,
+        "sell": 28,
+        "hold": 13
+      },
+      "sim": {
+        "trades": 10,
+        "buys": 5,
+        "sells": 5,
+        "winRate": 0.6,
+        "equity": 10217.26347318703,
+        "pnlPct": 2.172634731870294,
+        "realized": 235.94078796570136,
+        "fees": 37.59080652227511
+      },
+      "errors": 0,
+      "signals": [
+        {
+          "BTC": "buy",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "buy",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "buy",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "buy",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "hold",
+          "ETH": "hold"
+        },
+        {
+          "BTC": "buy",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "buy",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "buy",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "buy",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "buy",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "buy",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "buy",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "buy",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "buy",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "buy",
+          "ETH": "buy"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        },
+        {
+          "BTC": "sell",
+          "ETH": "sell"
+        }
+      ]
+    }
+  },
+  "baselines": {
+    "randomMedian": 0.39761269563703533,
+    "randomP10": -2.0754200951156965,
+    "randomP90": 2.0631305232120396,
+    "monte": 200,
+    "buyHoldPct": 2.717775946574111
+  }
+}
