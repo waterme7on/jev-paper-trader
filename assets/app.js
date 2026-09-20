@@ -341,7 +341,10 @@ function render(data) {
       </div>
       <div class="bars">${bars}</div>
       <div class="pos">${posHtml}
-        <div class="hint">1h ${q ? fmtSigned(q.change1h) + "%" : "—"} · 5m ${q ? fmtSigned(q.change5m) + "%" : "—"} · 1m ${q ? fmtSigned(q.change1m) + "%" : "—"}</div>
+        <div class="hint">${['1h','5m','1m'].map((lbl, i) => {
+          const v = i===0 ? q.change1h : i===1 ? q.change5m : q.change1m;
+          return `${lbl} ${v == null ? "—" : fmtSigned(v) + "%"}`;
+        }).join(' · ')}</div>
       </div>`;
     box.appendChild(card);
   }
