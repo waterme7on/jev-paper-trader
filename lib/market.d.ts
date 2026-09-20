@@ -37,6 +37,13 @@ export declare const SYMBOLS: string[];
 export declare function getSnapshot(): Promise<MarketSnapshot>;
 
 /**
+ * 画图用的历史价格序列（按时间升序），days 传 1 / 7 / 30 等 CoinGecko 接受的值。
+ * 5 分钟缓存。拿不到时对应标的直接缺席（键不存在），不是给空数组 ——
+ * 「没有数据」和「有数据但零个点」是两回事，调用方能区分才不会画出一条假的平线。
+ */
+export declare function getChartSeries(days?: number): Promise<Record<string, PriceTick[]>>;
+
+/**
  * 逐 tick 的价格序列（按时间升序）。
  * 注意这是进程内的环形缓冲（上限 400 笔/标的），Serverless 冷启动后是空的。
  */
