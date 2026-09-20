@@ -1,0 +1,13 @@
+{
+  "name": "jev-paper-trader",
+  "version": "1.0.0",
+  "private": true,
+  "description": "用 typesafe-ai/jev 做决策引擎的 BTC / ETH 纸面交易台（不碰真钱）",
+  "scripts": {
+    "dev": "echo '用 vercel dev 起本地环境：npx vercel dev' && exit 1"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jev 纸面交易台 · BTC / ETH</title>
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <h1>Jev 纸面交易台</h1>
+      <span class="sub">BTC / ETH · 每 5 秒由 <code>typesafe-ai/jev</code> 评估一次</span>
+    </div>
+    <div class="status">
+      <span id="dot" class="dot off"></span>
+      <span id="statusText">未启动</span>
+      <span id="countdown" class="cd">—</span>
+    </div>
+  </header>
+
+  <div class="notice warn">
+    <b>这是纸面交易（paper trading），不涉及任何真实资金，也没有接入任何交易所。</b>
+    账户、成交、盈亏全部存在你自己的浏览器 <code>localStorage</code> 里。
+    另外要讲清楚：<b>Jev 是评估模型，不是价格预测模型</b>——它只会按页面下方写死的判别标准给当前盘面分类，
+    不会预测涨跌。这套信号有没有用，未经任何回测验证。<b>不要把它当投资建议。</b>
+  </div>
+
+  <section class="acct">
+    <div class="kv"><span>初始资金</span><b id="initCash">—</b></div>
+    <div class="kv"><span>现金</span><b id="cash">—</b></div>
+    <div class="kv"><span>持仓市值</span><b id="posVal">—</b></div>
+    <div class="kv"><span>总权益</span><b id="equity">—</b></div>
+    <div class="kv"><span>已实现盈亏</span><b id="realized">—</b></div>
+    <div class="kv"><span>收益率</span><b id="ret" class="big">—</b></div>
+  </section>
+
+  <section class="grid" id="market"></section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>价格与买卖点</h2>
+      <div class="legend">
+        <span class="lg buy">买入</span>
+        <span class="lg sell">卖出</span>
+        <span id="chartNote" class="hint"></span>
+      </div>
+    </div>
+    <div class="chart-box"><canvas id="chart" height="260"></canvas></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>决策历史</h2>
+      <span id="histCount" class="hint"></span>
+    </div>
+    <div class="table-scroll">
+      <table id="hist">
+        <thead>
+          <tr>
+            <th>时间</th><th>标的</th><th>信号</th><th>概率</th>
+            <th>置信</th><th>价格</th><th>动作</th><th>备注</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>控制</h2></div>
+    <div class="controls">
+      <button id="toggle" class="btn primary">启动</button>
+      <button id="reset" class="btn danger">清空账户</button>
+      <label class="field">
+        <span>信号阈值 <b id="thrVal">0.55</b></span>
+        <input id="thr" type="range" min="0.3" max="0.95" step="0.05" value="0.55">
+      </label>
+      <label class="field">
+        <span>同标的冷却 <b id="cdVal">60s</b></span>
+        <input id="cooldown" type="range" min="0" max="300" step="10" value="60">
+      </label>
+      <label class="field">
+        <span>单笔仓位 <b id="allocVal">50%</b></span>
+        <input id="alloc" type="range" min="10" max="100" step="10" value="50">
+      </label>
+      <label class="field check">
+        <input id="riskGate" type="checkbox" checked>
+        <span>风控开关：Jev 判定高波动时强制 hold</span>
+      </label>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Jev 看到的状态 & 判别标准</h2></div>
+    <p class="hint">下面这段就是每一拍真正发给 Jev 的东西。信号对不对，先看它看到的东西对不对。</p>
+    <pre id="stateEcho" class="code">（启动后显示）</pre>
+    <details>
+      <summary>判别标准（criteria）</summary>
+      <pre class="code" id="criteria">—</pre>
+    </details>
+  </section>
+
+  <footer class="foot">
+    <span id="metaLine">—</span>
+  </footer>
+
+</div>
+
+<script src="/assets/app.js"></script>
+</body>
+</html>

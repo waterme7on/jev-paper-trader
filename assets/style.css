@@ -1,0 +1,118 @@
+:root{
+  --bg:#0b0e14; --panel:#131822; --panel2:#1a2130; --line:#243044;
+  --fg:#e6ebf5; --fg2:#9aa7bd; --fg3:#64748b;
+  --buy:#22c55e; --sell:#ef4444; --hold:#64748b; --accent:#60a5fa;
+  --warn:#f59e0b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--fg);
+  font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 20px 60px}
+
+/* ---------- header ---------- */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.brand h1{margin:0;font-size:22px;letter-spacing:.2px}
+.brand .sub{color:var(--fg3);font-size:12px}
+.brand code{background:var(--panel2);padding:1px 5px;border-radius:4px;color:var(--accent)}
+.status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--fg2)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--fg3);display:inline-block}
+.dot.on{background:var(--buy);box-shadow:0 0 0 3px rgba(34,197,94,.18)}
+.dot.off{background:var(--fg3)}
+.dot.err{background:var(--sell)}
+.cd{font-variant-numeric:tabular-nums;color:var(--fg3);min-width:34px;text-align:right}
+
+/* ---------- notice ---------- */
+.notice{border-radius:10px;padding:12px 14px;font-size:13px;margin-bottom:18px;border:1px solid var(--line)}
+.notice.warn{background:rgba(245,158,11,.08);border-left:3px solid var(--warn)}
+.notice b{color:var(--fg)}
+.notice code{background:var(--panel2);padding:1px 5px;border-radius:4px}
+
+/* ---------- account ---------- */
+.acct{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
+.kv{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.kv span{display:block;color:var(--fg3);font-size:11px;margin-bottom:3px}
+.kv b{font-size:16px;font-variant-numeric:tabular-nums}
+.kv b.big{font-size:18px}
+.up{color:var(--buy)} .down{color:var(--sell)} .flat{color:var(--fg2)}
+
+/* ---------- market cards ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-bottom:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px}
+.sym{font-size:17px;font-weight:600}
+.px{font-size:20px;font-variant-numeric:tabular-nums}
+.chg{font-size:12px;font-variant-numeric:tabular-nums}
+.chg.up{color:var(--buy)} .chg.down{color:var(--sell)} .chg.flat{color:var(--fg3)}
+
+.sig{margin:10px 0 8px;padding:8px 10px;border-radius:8px;background:var(--panel2);
+     display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sig .act{font-size:15px;font-weight:700;letter-spacing:.5px}
+.sig .act.buy{color:var(--buy)} .sig .act.sell{color:var(--sell)} .sig .act.hold{color:var(--fg2)}
+.sig .conf{font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums}
+
+.bars{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.bar-row{display:grid;grid-template-columns:44px 1fr 46px;align-items:center;gap:8px;font-size:11px}
+.bar-row .lb{color:var(--fg3)}
+.bar-row .vl{text-align:right;font-variant-numeric:tabular-nums;color:var(--fg2)}
+.track{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden}
+.fill{height:100%;border-radius:3px;transition:width .35s ease}
+.fill.buy{background:var(--buy)} .fill.sell{background:var(--sell)} .fill.hold{background:var(--hold)}
+
+.pos{font-size:12px;color:var(--fg2);border-top:1px dashed var(--line);padding-top:8px;font-variant-numeric:tabular-nums}
+.pos .none{color:var(--fg3)}
+
+/* ---------- panel ---------- */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:18px}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.panel h2{margin:0;font-size:15px}
+.hint{color:var(--fg3);font-size:11px}
+.legend{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--fg3)}
+.lg::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.lg.buy::before{background:var(--buy)} .lg.sell::before{background:var(--sell)}
+
+.chart-box{position:relative;width:100%}
+canvas{width:100%;display:block}
+
+/* ---------- table ---------- */
+.table-scroll{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{position:sticky;top:0;background:var(--panel2);color:var(--fg3);font-weight:500;
+         text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody td{padding:7px 10px;border-bottom:1px solid rgba(36,48,68,.5);font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:hover{background:rgba(96,165,250,.05)}
+.tag{padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600}
+.tag.buy{background:rgba(34,197,94,.15);color:var(--buy)}
+.tag.sell{background:rgba(239,68,68,.15);color:var(--sell)}
+.tag.hold{background:rgba(100,116,139,.15);color:var(--fg2)}
+td.note{color:var(--fg3);font-size:11px;white-space:normal}
+
+/* ---------- controls ---------- */
+.controls{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--panel2);color:var(--fg);
+     padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:#0b0e14;border-color:var(--accent);font-weight:600}
+.btn.danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:var(--sell)}
+.field{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--fg3);min-width:150px}
+.field b{color:var(--fg)}
+.field input[type=range]{width:150px;accent-color:var(--accent)}
+.field.check{flex-direction:row;align-items:center;gap:6px;min-width:auto}
+.field.check input{accent-color:var(--accent)}
+
+/* ---------- code ---------- */
+.code{background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+      padding:10px;margin:8px 0 0;font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;
+      color:var(--fg2);white-space:pre-wrap;word-break:break-word;max-height:280px;overflow:auto}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--fg3);font-size:12px}
+
+.foot{color:var(--fg3);font-size:11px;text-align:center;margin-top:20px;font-variant-numeric:tabular-nums}
+
+@media (max-width:600px){
+  .wrap{padding:16px 12px 40px}
+  .grid{grid-template-columns:1fr}
+}
