@@ -235,6 +235,14 @@ function render(data) {
     const conf = dec ? dec.confidence : null;
     const actLabel = hasSignal ? signal.toUpperCase() : "无信号";
 
+    // 同一份行情、同一条规则（定义在 assets/strategy.js，回测用的是同一份）
+    const nv = q ? Strategy.naiveSignal(Strategy.NAIVE_DEFAULT, q) : null;
+    if (hasSignal && nv) {
+      acct.naive = acct.naive || { same: 0, total: 0 };
+      acct.naive.total++;
+      if (nv === signal) acct.naive.same++;
+    }
+
     let posHtml;
     if (pos && prices[s]) {
       const pnl = ((prices[s] - pos.avgPrice) / pos.avgPrice) * 100;
@@ -266,6 +274,12 @@ function render(data) {
         <span class="conf">confidence ${conf == null ? "—" : conf.toFixed(2)}</span>
       </div>
       <div class="bars">${bars}</div>
+      <div class="naive-line">一行 <code>if</code>（${Strategy.NAIVE_DEFAULT}）：
+        ${nv ? `<b class="act ${nv}">${nv.toUpperCase()}</b>` : '<span class="none">动量不足</span>'}
+        ${hasSignal && nv ? (nv === signal
+          ? '<span class="agree">与 Jev 一致</span>'
+          : '<span class="diff">与 Jev 不同</span>') : ""}
+      </div>
       <div class="pos">${posHtml}
         <div class="hint">${q ? ['1h','5m','1m'].map((lbl, i) => {
           const v = i===0 ? q.change1h : i===1 ? q.change5m : q.change1m;
@@ -273,6 +287,43 @@ function render(data) {
         }).join(' · ') : "等待数据"}</div>
       </div>`;
     box.appendChild(card);
+  }
+
+  // ---- Jev vs 一行 if 的一致率
+  {
+    const n = acct.naive || { same: 0, total: 0 };
+    const box2 = $("naiveCmp");
+    if (!n.total) {
+      box2.innerHTML = '<div class="hint">还没有可比的数据（需要同时有 Jev 信号和 1h/24h 动量）。</div>';
+    } else {
+      const rate = (n.same / n.total) * 100;
+      const rows = SYMBOLS.map((s) => {
+        const q = snapshot.symbols && snapshot.symbols[s];
+        const dec = decisions[s];
+        const nv = q ? Strategy.naiveSignal(Strategy.NAIVE_DEFAULT, q) : null;
+        const jv = dec && dec.action ? dec.action : null;
+        return `<tr><td>${s}</td>`
+          + `<td><b class="act ${jv || ""}">${jv ? jv.toUpperCase() : "—"}</b></td>`
+          + `<td><b class="act ${nv || ""}">${nv ? nv.toUpperCase() : "—"}</b></td>`
+          + `<td>${jv && nv ? (jv === nv ? '<span class="agree">一致</span>' : '<span class="diff">不同</span>') : "—"}</td>`
+          + "</tr>";
+      }).join("");
+      box2.innerHTML = `<table class="cmp-t"><thead><tr><th>标的</th><th>Jev</th>`
+        + `<th>一行 if</th><th>是否一致</th></tr></thead><tbody>${rows}</tbody></table>`;
+      $("naiveNote").textContent =
+        `累计 ${n.total} 次可比判断，一致 ${n.same} 次（${rate.toFixed(0)}%）`;
+      // 一致率高就直接把话说出来，别让人自己去推
+      const note = $("naiveVerdict");
+      if (note) {
+        note.textContent = n.total < 10
+          ? `样本还太少（${n.total} 次），先看着。`
+          : rate >= 80
+            ? `一致率 ${rate.toFixed(0)}% —— 目前看，Jev 基本等价于一行 if。`
+            : rate >= 50
+              ? `一致率 ${rate.toFixed(0)}% —— 两者经常不同，但这不代表模型更对（回测里没证明它有 edge）。`
+              : `一致率 ${rate.toFixed(0)}% —— 两者多数时候不同，同样不代表模型更对。`;
+      }
+    }
   }
 
   // ---- Jev 看到的状态

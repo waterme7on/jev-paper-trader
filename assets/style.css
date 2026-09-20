@@ -116,6 +116,19 @@ td.note{color:var(--fg3);font-size:11px;white-space:normal}
 .cmp-t td.up{color:var(--buy)} .cmp-t td.down{color:var(--sell)}
 .cmp .warn-line{color:var(--warn);margin-top:6px}
 
+/* ---------- Jev vs 一行 if ---------- */
+.naive-cmp{margin-top:6px}
+.naive-line{margin-top:6px;font-size:11px;color:var(--fg3);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.naive-line code{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:0 4px;
+                 font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--fg2)}
+.naive-line .act{font-size:12px;font-weight:700}
+.naive-line .act.buy,.cmp-t .act.buy{color:var(--buy)}
+.naive-line .act.sell,.cmp-t .act.sell{color:var(--sell)}
+.naive-line .act.hold,.cmp-t .act.hold{color:var(--fg2)}
+.naive-line .none{color:var(--fg3)}
+.agree{color:var(--fg3);font-size:11px}
+.diff{color:var(--warn);font-size:11px;font-weight:600}
+
 /* ---------- code ---------- */
 .code{background:var(--panel2);border:1px solid var(--line);border-radius:8px;
       padding:10px;margin:8px 0 0;font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;

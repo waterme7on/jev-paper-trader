@@ -122,5 +122,35 @@
     };
   }
 
-  return { FEE, decide, execute, equityAt, freshAccount };
+  /* 机械规则：不调模型，只看动量的正负号。
+   *
+   * 为什么放在这里（和交易规则同一份 UMD）：
+   * 这几轮回测最重要的发现是「一行 if 的机械规则也能跑赢模型」。
+   * 所以页面上要能实时显示「同样行情下，一行 if 会说什么」——
+   * 那这条规则就必须和回测里用的是**同一份定义**，否则又变成两套代码。
+   * lib/eval.js 的 ruleProvider 直接引这里的 NAIVE_RULES。
+   *
+   * @param {object} q  { change24h, change1h }（null 视为「不知道」，不做判断）
+   */
+  const NAIVE_RULES = {
+    "涨就买跌就卖": (q) => (q.change1h > 0 && q.change24h > 0 ? "buy"
+                        : (q.change1h < 0 && q.change24h < 0 ? "sell" : "hold")),
+    "只看24h":     (q) => (q.change24h > 0 ? "buy" : "sell"),
+    "只看1h":      (q) => (q.change1h > 0 ? "buy" : "sell"),
+    "反向(跌买)":   (q) => (q.change24h < 0 ? "buy" : (q.change24h > 0 ? "sell" : "hold")),
+    "一直空仓":     () => "hold",
+  };
+
+  /** 页面上默认对照用的那条规则（回测里牛熊两个窗口综合表现最稳的一条） */
+  const NAIVE_DEFAULT = "涨就买跌就卖";
+
+  function naiveSignal(name, q) {
+    const fn = NAIVE_RULES[name || NAIVE_DEFAULT];
+    if (!fn || !q) return null;
+    // 动量缺失时不要瞎猜——回测里同样的情况也是给 null
+    if (q.change24h == null || q.change1h == null) return null;
+    return fn(q) || "hold";
+  }
+
+  return { FEE, decide, execute, equityAt, freshAccount, NAIVE_RULES, NAIVE_DEFAULT, naiveSignal };
 });

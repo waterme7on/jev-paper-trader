@@ -45,6 +45,20 @@
 
   <section class="panel">
     <div class="panel-head">
+      <h2>同一时刻，一行 if 会说什么</h2>
+      <span id="naiveNote" class="hint"></span>
+    </div>
+    <div id="naiveCmp" class="naive-cmp">
+      <div class="hint">启动后开始统计。</div>
+    </div>
+    <p class="hint" id="naiveVerdict"></p>
+    <p class="hint">回测里，这类不用模型的规则在两个窗口（牛市 / 熊市）都跑赢过 Jev。
+      这里把两者并排放着，是为了让你自己看：**模型在实时盘面上到底有没有说出规则说不到的东西。**
+      一致率高 = 模型基本等价于一行 if。</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
       <h2>价格与买卖点</h2>
       <div class="legend">
         <span class="lg buy">买入</span>

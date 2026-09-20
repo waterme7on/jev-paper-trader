@@ -153,6 +153,16 @@ console.log("\n=== 机械规则 provider ===");
   ok((await g("rule:h24", down)) === "sell", "只看24h：负 → sell");
   ok((await g("rule:revert", down)) === "buy", "反向：跌 → buy");
   ok((await g("rule:flat", up)) === "hold", "一直空仓：永远 hold");
+
+  // 缺动量时不许瞎猜：页面和回测共用同一份规则定义（assets/strategy.js）
+  const S = require(path.join(ROOT, "assets/strategy.js"));
+  ok(S.naiveSignal("涨就买跌就卖", { change24h: null, change1h: 1 }) === null,
+     "缺动量 → null（页面上显示「动量不足」，不伪装成 hold）");
+  ok(S.naiveSignal("涨就买跌就卖", null) === null, "没有行情 → null");
+  ok((await Eval.ruleProvider("rule:trend-up")
+        .signal({ symbols: { BTC: { change24h: null, change1h: null }, ETH: { change24h: null, change1h: null } } })
+      ).BTC.action === "hold", "回测里缺动量回落到 hold（保守，不编信号）");
+  ok(Eval.RULES === S.NAIVE_RULES, "lib/eval.js 与页面用的是同一份规则定义（不是两份拷贝）");
 }
 
 console.log("\n" + "=".repeat(60));
