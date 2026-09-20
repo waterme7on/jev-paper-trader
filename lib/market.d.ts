@@ -36,12 +36,23 @@ export declare const SYMBOLS: string[];
 /** 现货价 + 各周期涨跌幅。失败时自动退回 Coinbase 兜底。 */
 export declare function getSnapshot(): Promise<MarketSnapshot>;
 
+export interface ChartSeriesResult {
+  /** 按时间升序。拿不到的标的直接缺席（键不存在），不是给空数组。 */
+  series: Record<string, PriceTick[]>;
+  /** 序列实际来自哪个源：coingecko / coinbase / mixed / unavailable。 */
+  source: string;
+}
+
 /**
- * 画图用的历史价格序列（按时间升序），days 传 1 / 7 / 30 等 CoinGecko 接受的值。
- * 5 分钟缓存。拿不到时对应标的直接缺席（键不存在），不是给空数组 ——
- * 「没有数据」和「有数据但零个点」是两回事，调用方能区分才不会画出一条假的平线。
+ * 画图用的历史价格序列，days 传 1 / 7 / 30。5 分钟缓存。
+ *
+ * CoinGecko 免费层限流很凶，而序列只有它能给，所以失败时退回 Coinbase Exchange
+ * 的 candles——不补这一段，一被限流图就整个空了。
+ *
+ * 拿不到时让标的缺席而不是给空数组：「没有数据」和「有数据但零个点」是两回事，
+ * 调用方能区分才不会画出一条假的平线。
  */
-export declare function getChartSeries(days?: number): Promise<Record<string, PriceTick[]>>;
+export declare function getChartSeries(days?: number): Promise<ChartSeriesResult>;
 
 /**
  * 逐 tick 的价格序列（按时间升序）。
