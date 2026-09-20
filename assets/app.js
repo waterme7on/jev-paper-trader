@@ -319,10 +319,15 @@ function drawChart() {
   g.clearRect(0, 0, w, h);
 
   const pts = acct.points.filter((p) => p.BTC && p.ETH);
+  const marks = acct.decisions.filter((d) => d.action !== "hold");
+  // 说明文字要在提前返回之前写好，否则点数不足时这一栏一直是空的
+  $("chartNote").textContent = pts.length
+    ? `${pts.length} 个价格点 · ${marks.length} 次成交`
+    : "等待数据…";
   if (pts.length < 2) {
     g.fillStyle = "#64748b";
     g.font = "12px sans-serif";
-    g.fillText("采集中…需要至少两个价格点", 12, h / 2);
+    g.fillText("采集中…需要至少两个价格点（每 5 秒一个）", 12, h / 2);
     return;
   }
 
@@ -371,7 +376,6 @@ function drawChart() {
   // 买卖点标记：按时间戳定位到索引
   const idxByTs = new Map();
   pts.forEach((p, i) => idxByTs.set(p.ts, i));
-  const marks = acct.decisions.filter((d) => d.action !== "hold");
   let drawn = 0;
   for (const d of marks) {
     if (drawn > 120) break;
@@ -399,7 +403,6 @@ function drawChart() {
   g.fillStyle = "#64748b";
   g.fillText("▲ 买入   ▼ 卖出（相对首点的涨跌幅 %）", L + 66, T + 10);
 
-  $("chartNote").textContent = `${pts.length} 个价格点 · ${marks.length} 次成交`;
 }
 
 // ---------------------------------------------------------------- 控件
