@@ -171,7 +171,9 @@ async function tick() {
     `数据源 ${data.source} · Jev 延迟 ${m.latencyMs ?? "?"}ms · `
     + `本次扣费 $${m.cost == null ? "?" : m.cost}`
     + (m.marketCost ? `（列表价 $${m.marketCost}）` : "")
-    + (data.cached ? " · 命中按拍缓存" : "");
+    + (data.cached ? " · 命中按拍缓存" : "")
+    // 风控概率一直在决定要不要拦买入，但以前整页都没显示过它
+    + ` · 风控 ${riskProb == null ? "—" : riskProb.toFixed(2)}`;
 
   schedule(TICK_MS);
 }
@@ -337,6 +339,9 @@ function render(data) {
   // ---- Jev 看到的状态
   if (data && data.stateEcho) $("stateEcho").textContent = data.stateEcho;
 
+  // ---- Jev 的原始输出
+  renderModelOut(data);
+
   // ---- 决策历史
   const tb = document.querySelector("#hist tbody");
   tb.innerHTML = acct.decisions.slice(0, 200).map((d) => {
@@ -357,6 +362,70 @@ function render(data) {
   $("histCount").textContent = `共 ${acct.decisions.length} 条（显示最近 200）`;
 
   drawChart();
+}
+
+/* ---- 模型原始输出 ----
+ *
+ * 之前页面上只有「Jev 看到的状态」（输入），没有「Jev 说了什么」（输出原文），
+ * 模型给出的 marketRisk 概率更是全程没露过面——但它一直在悄悄决定要不要拦买入。
+ * 这里把 answers 原文整段打出来，失败时也一样打（错误原因 / 限流参数），
+ * 否则「模型没输出」和「页面没显示」看起来完全一样。
+ */
+
+let outLogLines = [];
+let lastOutBody = "";
+
+function renderModelOut(data) {
+  const el = $("modelOut");
+  if (!el) return;
+
+  // 首次渲染 / 清空账户时会传一个空壳对象，不要误报成「模型没输出」
+  const failed = !!data && !data.ok && !!(data.error || data.throttled);
+  if (!data || !data.ok) {
+    if (failed) {
+      const head = $("outHead");
+      if (head) head.textContent = "这一拍没有模型输出";
+      el.textContent = [
+        "error:    " + (data.error || "—"),
+        data.rateLimit ? "rateLimit: " + JSON.stringify(data.rateLimit) : "",
+        data.state ? "\n本想发给它的 state（原文）：\n" + data.state : "",
+      ].filter(Boolean).join("\n");
+    }
+    return;
+  }
+
+  const m = data.meta || {};
+  const u = m.usage || {};
+  const risk = data.risk ? data.risk.probability : null;
+  const t = new Date(data.ts || Date.now()).toLocaleTimeString("zh-CN", { hour12: false });
+
+  const head = [
+    t,
+    data.variant,
+    "延迟 " + (m.latencyMs == null ? "?" : m.latencyMs) + "ms",
+    "token " + (u.inputTokens == null ? "?" : u.inputTokens) + " in / "
+            + (u.outputTokens == null ? "?" : u.outputTokens) + " out",
+    "风控概率 " + (risk == null ? "—" : risk.toFixed(2))
+      + (risk != null && risk >= 0.5 ? "（≥0.5，买入被拦截）" : ""),
+    data.cached ? "命中按拍缓存" : "",
+  ].filter(Boolean).join(" · ");
+  if ($("outHead")) $("outHead").textContent = head;
+
+  const body = JSON.stringify(data.answers || {}, null, 2);
+  lastOutBody = body;
+
+  if ($("outLog") && $("outLog").checked) {
+    outLogLines.push("── " + head + "\n" + body);
+    if (outLogLines.length > 60) outLogLines.shift();
+    el.textContent = outLogLines.join("\n\n");
+  } else {
+    el.textContent = body;
+  }
+
+  if ($("questionsEcho")) {
+    $("questionsEcho").textContent = JSON.stringify((data && data.questionsEcho) || {}, null, 2);
+  }
+  el.scrollTop = el.scrollHeight;
 }
 
 function escapeHtml(s) {
@@ -481,6 +550,10 @@ function bindControls() {
     render({ snapshot: { symbols: {} }, decisions: {} });
     $("stateEcho").textContent = "（已清空，重新启动后显示）";
     $("metaLine").textContent = "—";
+    outLogLines = [];
+    lastOutBody = "";
+    $("modelOut").textContent = "（已清空，重新启动后显示）";
+    $("outHead").textContent = "（启动后显示）";
   });
 
   const bind = (id, key, fmtFn, scale) => {
@@ -497,6 +570,30 @@ function bindControls() {
   bind("cooldown", "cooldownSec", (v) => v + "s", Number);
   bind("alloc", "allocPct", (v) => v + "%", Number);
   $("riskGate").addEventListener("change", (e) => { cfg.riskGate = e.target.checked; });
+
+  // 输出面板的两个控件。同样不能因为 id 缺失把启动流程拖死。
+  const logBox = $("outLog");
+  if (logBox) {
+    logBox.addEventListener("change", () => {
+      // 关掉累积就回到「只看最新一拍」
+      if (!logBox.checked) { outLogLines = []; $("modelOut").textContent = lastOutBody; }
+    });
+  }
+  const copyBtn = $("copyOut");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", () => {
+      const text = $("modelOut").textContent;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+          () => { copyBtn.textContent = "已复制"; setTimeout(() => { copyBtn.textContent = "复制"; }, 1200); },
+          () => { copyBtn.textContent = "复制失败"; setTimeout(() => { copyBtn.textContent = "复制"; }, 1200); }
+        );
+      } else {
+        copyBtn.textContent = "不支持剪贴板";
+        setTimeout(() => { copyBtn.textContent = "复制"; }, 1200);
+      }
+    });
+  }
 }
 
 // ---------------------------------------------------------------- 启动

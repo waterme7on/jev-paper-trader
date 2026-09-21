@@ -107,12 +107,26 @@ async function compute(key, positions, variant) {
     variant: variant,
   });
 
+  // 服务端日志里也打一份原文。Vercel 只留运行日志，页面刷新就没了，
+  // 想回看「某一拍模型到底说了什么」只能靠这里。
+  console.log("[tick] " + JSON.stringify({
+    ts: snapshot.ts,
+    variant,
+    source: snapshot.source,
+    risk: risk.probability,
+    latencyMs: res.latencyMs,
+    decisions: Object.fromEntries(SYMBOLS.map((s) => [s, decisions[s] ? decisions[s].action : null])),
+    answers: res.answers || {},
+  }));
+
   const payload = {
     ok: true,
     ts: snapshot.ts,
     source: snapshot.source,
     snapshot,
     decisions,
+    // 模型这一拍的 answers 原文，页面上要能直接看到
+    answers: res.answers || {},
     variant,
     risk: { probability: risk.probability == null ? null : risk.probability },
     meta: {
@@ -123,6 +137,8 @@ async function compute(key, positions, variant) {
     },
     // 用 state 回显，方便核对 Jev 到底看到了什么
     stateEcho: state,
+    // 这一拍实际问了什么（含 criteria 原文），和输出并列着看才对得上
+    questionsEcho: questions,
     // 服务端最近几拍（best effort：lambda 冷启动会清空，权威记录在前端 localStorage）
     recent: history.slice(-20),
   };

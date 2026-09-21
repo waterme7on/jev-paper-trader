@@ -126,6 +126,26 @@
     </details>
   </section>
 
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Jev 这一拍的原始输出</h2>
+      <span class="legend">
+        <label class="field check"><input id="outLog" type="checkbox"><span>累积成日志</span></label>
+        <button id="copyOut" class="btn tiny" type="button">复制</button>
+      </span>
+    </div>
+    <p class="hint">下面是模型这一拍返回的 <code>answers</code> <b>原文</b>，没做任何加工。
+      页面上方那些信号条、置信度、买卖动作，都是这份原文被
+      <code>parseAnswers()</code> 解读 + 交易规则过滤之后的结果——
+      想核对「到底是谁改了模型的结论」，就要看这一栏。</p>
+    <div id="outHead" class="out-head">（启动后显示）</div>
+    <pre id="modelOut" class="code">（启动后显示）</pre>
+    <details>
+      <summary>这一拍问了什么（questions 原文，含 criteria）</summary>
+      <pre id="questionsEcho" class="code">—</pre>
+    </details>
+  </section>
+
   <footer class="foot">
     <span id="metaLine">—</span>
   </footer>
